@@ -8,3 +8,8 @@ typedef struct library
     char ForeignKey[255];
     char sanksi[255];
 }dataName;
+
+// Sorting method
+void swap(dataName *a, dataName *b);
+int partition(dataName arr[], int low, int high);
+void quicSort(dataName arr[], int low, int high);
