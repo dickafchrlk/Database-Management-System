@@ -10,8 +10,8 @@ int wlen; // panjang current word
 char cw[255]; // current word
 
 // cek eop
-int eop(char pita[]){
-    if(pita[idx] == ';'){ // jika ';' return 1
+int eop(char pita[]) {
+    if((pita[idx] == ';') || (pita[idx] == '\0')){ // jika ';' return 1
         return 1;
     }
     else{
@@ -20,7 +20,7 @@ int eop(char pita[]){
 }
 
 // nyalakan mesin
-void start(char pita[]){
+void start(char pita[]) {
     // set index dan panjang kata menjadi 0
     idx = 0;
     wlen = 0;
@@ -41,17 +41,17 @@ void start(char pita[]){
 }
 
 // reset current word
-void reset(){
+void reset() {
     wlen = 0; // kembalikan panjang kata menjadi 0
     cw[wlen] = '\0'; // set current word menjadi null (siap diisi)
 }
 
 // pindah next kata
-void inc(char pita[]){
+void inc(char pita[]) {
     wlen = 0; // set panjang kata jadi 0 (memastikan)
 
 
-    while (pita[idx] == ' '){ // ignore blank
+    while ((pita[idx] == ' ') && (eop(pita) == 0)){ // ignore blank
         idx++;
     }
 
@@ -66,12 +66,12 @@ void inc(char pita[]){
 }
 
 // mengembalikan current word
-char* getcw(){
+char* getcw() {
     return cw;
 }
 
 // mengembalikan panjang current word
-int getlen(){
+int getlen() {
     return wlen;
 }
 
@@ -91,7 +91,9 @@ void swap(dataName *a, dataName *b) {
 }
 
 int partition(dataName arr[], int low, int high) {
-    int p = arr[low].PrimaryKey;
+    char pivot[255];
+    strcpy(pivot, arr[low].primaryKey);
+
     int i = low;
     int j = high;
 
@@ -99,14 +101,14 @@ int partition(dataName arr[], int low, int high) {
     {
         // mencari element pertama yang lebih besar dari pivot
         // pivot (di awal)
-        while (arr[i].PrimaryKey <= p && i <= high -1)
+        while (i <= high - 1 && strcmp(arr[i].primaryKey, pivot) <= 0)
         {
             i++;
         }
 
         // mencari element pertama yang lebih kecil dari pivot
         // pivot (di akhir)
-        while (arr[j].PrimaryKey > p && j >= low + 1)
+        while (j >= low + 1 && strcmp(arr[j].primaryKey, pivot) > 0)
         {
             j--;
         }
@@ -122,16 +124,16 @@ int partition(dataName arr[], int low, int high) {
     return j;
 }
 
-void quicSort(dataName arr[], int low, int high) {
+void quickSort(dataName arr[], int low, int high) {
     if (low < high)
     {
         // Gunakan prosedur partition untuk mencari pivot
-        int pi = partition(&arr, low, high);
+        int pi = partition(arr, low, high);
 
         // Gunakan pemanggilan rekursif dari prosedur quicksort
         // setengah kiri dan kanan yang di pisah menggunakan pivot
-        quicSort (&arr, low, pi - 1);
-        quicSort (&arr, pi + 1, high);
+        quickSort (arr, low, pi - 1);
+        quickSort (arr, pi + 1, high);
     }
 }
 
@@ -140,13 +142,13 @@ void quicSort(dataName arr[], int low, int high) {
  * Proses pencarian data dengan membandingkan target dengan data
  * untuk menemukan nya. Digunakan untuk mencari data dari file / database
  */
-int SequentialSearch(int n, dataName arr[], char target[]){
+int SequentialSearch(int n, dataName arr[], char target[]) {
     int idx = 0; // Counter
     
     while(idx < n)
     // perulangan while sebanyak total data (n)
     {
-        if(strcmp(target, arr[idx].PrimaryKey) == 0)
+        if(strcmp(target, arr[idx].primaryKey) == 0)
         // if statement untuk membandingkan target dengan data
         {
             // jika sama maka kembalikan nilai index nya
@@ -173,27 +175,19 @@ void readFile(int *n, dataName source[], char filename[]) {
     FILE *fTemp;
     fTemp = fopen(filename, "r");
 
-    int returnVal = fscanf(fTemp, "%s %s %s %s",
-        source[*n].PrimaryKey,
-        source[*n].ForeignKey,
-        source[*n].Atribute1,
-        source[*n].Atribute2
-    );
-
-    if (strcmp(source[*n].PrimaryKey, "####") == 0)
+    if (fTemp == NULL) {
+        printf("File tidak ditemukan\n");
+        return;
+    }
+    
+    while (fscanf(fTemp,"%s %s %s %s",
+            source[*n].primaryKey,
+            source[*n].foreignKey,
+            source[*n].name,
+            source[*n].attribute) == 4 &&
+            strcmp(source[*n].primaryKey,"####") != 0)
     {
-        printf("File Kosong\n");
-    } else {
-        while (strcmp (source[*n].PrimaryKey, "####") != 0)
-        {
-            *n = *n + 1;
-            fscanf(fTemp, "%s %s %s %s",
-            source[*n].PrimaryKey,
-            source[*n].ForeignKey,
-            source[*n].Atribute1,
-            source[*n].Atribute2
-            );
-        }
+        (*n)++;
     }
     fclose(fTemp);
 }
@@ -204,20 +198,25 @@ void readFile(int *n, dataName source[], char filename[]) {
  * data dari file.txt
  */
 
-void writeFile(int n, dataName source[], char fileName[]) {
+void writeFile(int *n, dataName source[], char fileName[]) {
     FILE *fTemp;
     fTemp = fopen(fileName, "w");
-
-    for (int i = 0; i < n; i++)
+    
+    if (fTemp == NULL) {
+        printf("File tidak ditemukan\n");
+        return;
+    }
+    
+    for (int i = 0; i < *n; i++)
     {
         fprintf(fTemp, "%s %s %s %s\n",
-            source[i].PrimaryKey,
-            source[i].ForeignKey,
-            source[i].Atribute1,
-            source[i].Atribute2
+            source[i].primaryKey,
+            source[i].foreignKey,
+            source[i].name,
+            source[i].attribute
         );
     }
-    fprintf(fTemp, "%s %s %s %s\n", "####", "####", "####");
+    fprintf(fTemp, "%s %s %s %s\n", "####", "####", "####", "####");
     
     fclose(fTemp);
 }
@@ -228,14 +227,20 @@ void writeFile(int n, dataName source[], char fileName[]) {
  * kedalam database
  */
 
-void queryAdd (char ribbon[], int n, dataName source[]) {
+void queryAdd (char ribbon[], int *n, dataName source[], char fileName[]) {
     char temp_primary[255];
     char temp_foreign[255];
-    char temp_atribute1[255];
-    char temp_atribute2[255];
+    char temp_name[255];
+    char temp_attribute[255];
+
+    if (*n >= 50)
+    {
+        printf("Database penuh\n");
+        return;
+    }
 
     inc(ribbon);
-    if (getlen() != NULL)
+    if (getlen() > 0)
     {
         strcpy(temp_primary, getcw());
     } else {
@@ -244,50 +249,50 @@ void queryAdd (char ribbon[], int n, dataName source[]) {
     }
     
     inc(ribbon);
-    if (getlen() != NULL)
+    if (getlen() > 0)
     {
         strcpy(temp_foreign, getcw());
     } else {
-        printf("\033[91mError: ForeignKey tidak valid.\033[0m\n");
+        printf("\033[91mError: foreignKey tidak valid.\033[0m\n");
         return;
     }
     
     inc(ribbon);
-    if (getlen() != NULL)
+    if (getlen() > 0)
     {
-        strcpy(temp_atribute1, getcw());
+        strcpy(temp_name, getcw());
     } else {
-        printf("\033[91mError: Atribute tidak valid.\033[0m\n");
+        printf("\033[91mError: name tidak valid.\033[0m\n");
         return;
     }
 
     inc(ribbon);
-    if (getlen() != NULL)
+    if (getlen() > 0)
     {
-        strcpy(temp_atribute2, getcw());
+        strcpy(temp_attribute, getcw());
     } else {
         printf("\033[91mError: Atribute tidak valid.\033[0m\n");
         return;
     }
 
     // buat flag untuk pencarian data
-    int found = SequentialSearch(n, source, temp_primary); 
+    int found = SequentialSearch(*n, source, temp_primary); 
 
     // if statement untuk mencari apakah ada data yang sama / tidak
     if (found == -1) // tidak ketemu / tidak ada data yang sama
     {
         // masukan data baru ke dalam source
-        strcpy(source[n].PrimaryKey, temp_primary);
-        strcpy(source[n].PrimaryKey, temp_foreign);
-        strcpy(source[n].PrimaryKey, temp_atribute1);
-        strcpy(source[n].PrimaryKey, temp_atribute2);
+        strcpy(source[*n].primaryKey, temp_primary);
+        strcpy(source[*n].foreignKey, temp_foreign);
+        strcpy(source[*n].name, temp_name);
+        strcpy(source[*n].attribute, temp_attribute);
 
         //tambahkan jumlah variable pada jumlah data / file
-        n++;
+        (*n)++;
         printf("SUCCESS: Kasus berhasil ditambahkan.\n");
         
-        // simpan data ke dalam file sanksi.txt
-        writeFileKasus(n,source, "kasus.txt");
+        // simpan data ke dalam file
+        writeFile(n, source, fileName);
     } else {
         // Error handling...
         // Error handling Jika terdapat primary key yang sama
@@ -300,27 +305,33 @@ void queryAdd (char ribbon[], int n, dataName source[]) {
  * file.txt agar dapat di baca oleh pengguna dbms
  */
 
-void queryShow(dataName source[]) {
-    int n = 0;
-    readFile(&n, source, "file.txt");
+void queryShow(int *n, dataName source[]) {
+    if(*n > 0){
+        quickSort(source, 0, *n - 1);
+    
 
-    for (int i = 0; i < n; i++)
-    {
-        printf("| %-*s | %-*s | %-*s | %-*s |\n", 
-            source[i].PrimaryKey,   // Id / Kode unik
-            source[i].ForeignKey,   // Kode penghubung
-            source[i].Atribute1,    // Nama
-            source[i].Atribute2     // Perilaku
-        );
+        for (int i = 0; i < *n; i++)
+        {
+            printf("| %-10s | %-10s | %-20s | %-20s |\n",
+                source[i].primaryKey,
+                source[i].foreignKey,
+                source[i].name,
+                source[i].attribute
+            );
+        }
+    } else {
+        // Error handling...
+        // Error handling Jika database kosong
+        printf("\033[91mError: Database Kosong.\033[0m\n");
     }
 }
 
 /**
  * Query Update
- * 
+ * Digunakan untuk mengupdate data
  */
 
-void queryUpdate(char ribbon[], int n, dataName source[]) {
+void queryUpdate(char ribbon[], int *n, dataName source[], char fileName[]) {
     char primaryKey[255];
     char update[255];
 
@@ -345,59 +356,58 @@ void queryUpdate(char ribbon[], int n, dataName source[]) {
         return;
     }
 
-    int found = SequentialSearch(n, source, update);
+    int found = SequentialSearch(*n, source, primaryKey);
 
     if (found != -1) // jika code id tersebut ada
     {
-        strcpy(source[found].Atribute1, update);
-    
+        strcpy(source[found].name, update);
+        writeFile(n, source, fileName);
         printf("SUCCESS: Data berhasil di update.\n");
     }else{
         printf("\033[91mERROR: Primary Key Tersebut Tidak DiTemukan.\033[0m\n");
     }
-
-    writeFile(n, source, "sanksi.txt");
 }
-
 
 /**
  * Query Delete
- * 
+ * Digunakan untuk menghapus data dari database
  */
 
-void queryDelete(char ribbon[], int n, dataName source[]) {
+void queryDelete(char ribbon[], int *n, dataName source[], char fileName[]) {
     char primaryKey[255];
     inc(ribbon);
     
-    if (getlen() != NULL)
+    if (getlen() > 0)
     {
         strcpy(primaryKey, getcw());
     } else {
         printf("\033[91mError: Kode delete tidak valid.\033[0m\n");   
     }
 
-    int found = SequentialSearch(n, source, primaryKey);
+    int found = SequentialSearch(*n, source, primaryKey);
 
     if (found != -1) // jika terdapat code tersebut dalam data
     {
-        for (int i = found; i < n - 1; i++)
+        for (int i = found; i < *n - 1; i++)
         {
-            strcpy(source[i].PrimaryKey, source[i + 1].PrimaryKey); 
-            strcpy(source[i].ForeignKey, source[i + 1].ForeignKey); 
-            strcpy(source[i].Atribute1, source[i + 1].Atribute1); 
-            strcpy(source[i].Atribute2, source[i + 1].Atribute2); 
+            strcpy(source[i].primaryKey, source[i + 1].primaryKey); 
+            strcpy(source[i].foreignKey, source[i + 1].foreignKey); 
+            strcpy(source[i].name, source[i + 1].name); 
+            strcpy(source[i].attribute, source[i + 1].attribute); 
             
         }
-        strcpy(source[n - 1].PrimaryKey, "####");
-        strcpy(source[n - 1].ForeignKey, "####");
-        strcpy(source[n - 1].Atribute1, "####");
-        strcpy(source[n - 1].Atribute2, "####");
+        strcpy(source[*n - 1].primaryKey, "####");
+        strcpy(source[*n - 1].foreignKey, "####");
+        strcpy(source[*n - 1].name, "####");
+        strcpy(source[*n - 1].attribute, "####");
 
-        n--;
+        (*n)--;
 
         printf("SUCCESS: Data kasus berhasil di hapus.\n");
     } else {
         // Error handling...
         printf("\033[91mError: Code Kasus Tersebut Tidak Ditemukan.\033[0m\n");
+        return;
     }
+    writeFile(n, source, fileName);
 }
